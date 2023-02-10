@@ -34,7 +34,7 @@ library(tidymodels)
     ## ✖ dplyr::lag()      masks stats::lag()
     ## ✖ yardstick::spec() masks readr::spec()
     ## ✖ recipes::step()   masks stats::step()
-    ## • Dig deeper into tidy modeling with R at https://www.tmwr.org
+    ## • Use suppressPackageStartupMessages() to eliminate package startup messages
 
 ``` r
 library(GGally)
@@ -191,16 +191,17 @@ which says that this plot doesn’t have non-linear relationships. This
 suggests that we can assume linear relationship between the predictors
 and the outcome variables.
 
-From the QQ-plot, we can say that most residual points are lined well on
-the straight dashed line.
+From the QQ-plot, we can say that most residual points are away from the
+straight dashed line. So the model is not normal.
 
 From the Scale-Location plot, the residuals appear randomly spread
 around the horizontal line.
 
-From the Residuals vs Leverage plot, there is an influential point found
-near Cook’s distance line.
+From the Residuals vs Leverage plot, there is no influential point near
+Cook’s distance line.
 
-Do we need to exclude the influential point. Ask Prof.
+Yes it is. Gender variable made beauty average even more significant as
+the computed p-valueis even smaller.
 
 ### Simplified equation of the line corresponding to female professors: (Female = 0)
 
@@ -225,7 +226,8 @@ Second slope 0.172 is significantly different from 0. For a male and a
 female professors with the same beauty scores, male professors’ average
 evaluation score is expected to be higher by 0.172 points.
 
-Ask prof question no 10?????
+For two professors with the same beauty rating, the male professor tends
+to have a higher course evaluation score.
 
 ``` r
 # Fitting the model with gender removed and rank added in
@@ -297,3 +299,47 @@ Estimated score = β0hat + β1hat(bty\_avg) + β2hat \* 1 + β3hat \* 0 =
 
 Estimated score = β0hat + β1hat(bty\_avg) + β2hat \* 0 + β3hat \* 1 =
 3.74733824 + 0.07415537(bty\_avg) + 0 + (-0.12623) \* 1
+
+### bty\_avg x gender interaction
+
+``` r
+m_int <- lm(score ~ bty_avg * gender, data = evals)
+tidy(m_int)
+```
+
+    ## # A tibble: 4 × 5
+    ##   term               estimate std.error statistic   p.value
+    ##   <chr>                 <dbl>     <dbl>     <dbl>     <dbl>
+    ## 1 (Intercept)          3.95      0.118      33.5  2.92e-125
+    ## 2 bty_avg              0.0306    0.0240      1.28 2.02e-  1
+    ## 3 gendermale          -0.184     0.153      -1.20 2.32e-  1
+    ## 4 bty_avg:gendermale   0.0796    0.0325      2.45 1.46e-  2
+
+Since the p-value associated with the interaction term is &lt; 0.05. So
+there is a statistically significant interaction between beauty average
+rating and gender. In other words, there is evidence that a synergy
+effect exists between these 2 variables. Their combination is more
+powerful than the sum of their effects.
+
+To study the effect of beauty average rating and gender on the professor
+evaluation score.
+
+Y = β0 + β1 X1 + β2 X2 + β3 X1X2
+
+Score = 3.95005984 + 0.03064259 \* bty\_avg - 0.18350903 \* gender +
+0.07961855 \* bty\_avg \* gender
+
+For Female:
+
+Score = 3.95005984 + 0.03064259 \* bty\_avg - 0.18350903 \* 0 +
+0.07961855 \* bty\_avg \* 0 = 3.950 + 0.0306 \* bty\_avg
+
+For Male:
+
+Score = 3.95005984 + 0.03064259 \* bty\_avg - 0.18350903 \* 1 +
+0.07961855 \* bty\_avg \* 1 = 3.766 + 0.1102 \* bty\_avg
+
+From last 2 equations, we can easily see that a 0.0306 unit increase in
+beauty average rating has a larger effect on prof evaluation score for
+those who are female (coefficient = 0.0306) compared to those who are
+male (coefficient = 0.1102).
